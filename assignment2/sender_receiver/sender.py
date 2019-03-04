@@ -121,6 +121,7 @@ def sender(receiver_ip, receiver_port, window_size):
         send_signal(s, next_seq, END, receiver_ip, receiver_port)
         # sender blocked on waiting ACK
         pkt_header = recv_signal(s, receiver_ip, receiver_port)
+        # print pkt_header.type, pkt_header.seq_num
         if pkt_header and pkt_header.type == ACK and pkt_header.seq_num == next_seq:
             break
 
