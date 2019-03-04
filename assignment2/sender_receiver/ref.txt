@@ -1,0 +1,39 @@
+while True:
+    data = sys.stdin.read()
+    if not data:
+        break
+    s.sendall(data)
+s.close()
+
+while True:
+    conn, addr = s.accept()
+    while True:
+        data = conn.recv(RECV_BUFFER_SIZE)
+        if not data:
+            break
+        sys.stdout.write(data)
+        sys.stdout.flush()
+    conn.close()
+
+WINDOW_SIZE = 0                 # Initialized by command param
+SEND_BUFFER_SIZE = 1456         # 1472-4*4 = 1456 bytes
+
+window = dict()                 # Window to store seq_no-data chunk
+threadLock = threading.Lock()   # Lock for synchronization on window ops
+timer_on = True                 # Signal to shutdown the timer
+next_seq = 0                    # Next sequence number to be ACK
+
+
+class Timer (threading.Thread):
+    def __init__(self, ret_time, seq_no):
+        threading.Thread.__init__(self)
+        self.ret_time = ret_time    # Retransmission time
+        self.seq_no = seq_no        # Updated when window advanced
+
+    def send_all(self):
+        threadLock.acquire()
+
+
+    def run(self):
+        while timer_on:
+            if self.seq_no < next_seq:
