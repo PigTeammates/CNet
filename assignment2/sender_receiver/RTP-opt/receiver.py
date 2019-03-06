@@ -98,14 +98,14 @@ def receiver(receiver_port, window_size):
                 if seq_no != next_seq:
                     if seq_no > next_seq:
                         window[seq_no] = msg    # buffers out-of-order packets
-                    send_signal(s, pkt_header.seq_num, ACK, *addr)
                 else:
                     window[seq_no] = msg
                     while next_seq in window:
                         sys.stdout.write(window[next_seq])
                         sys.stdout.flush()
                         next_seq += 1
-                    send_signal(s, next_seq, ACK, *addr)
+
+                send_signal(s, pkt_header.seq_num, ACK, *addr)
 
             if pkt_header.type == END:
                 send_signal(s, next_seq, ACK, *addr)

@@ -37,3 +37,22 @@ class Timer (threading.Thread):
     def run(self):
         while timer_on:
             if self.seq_no < next_seq:
+
+
+if pkt_header and pkt_header.type == ACK:
+    ack_seq = pkt_header.seq_num
+    # try to clear the buffer
+    if ack_seq in window:
+        window.pop(ack_seq)
+
+    # retransmit any packet with timeout
+    timeout_msg = list()    # a list storing the seq_no of the timeout msg
+    for seq_no, val in window.items():
+        timer = val[0]
+        if time.time() - timer > ret_time:
+            timeout_msg.append(seq_no)
+            val[0] = time.time()    # reset the timer
+    send_data(s, window, timeout_msg, receiver_ip, receiver_port)
+
+    # try to advance the window
+    next_seq = min(ack_seq, sorted(window.keys())) if len(window) > 0 else ack_seq

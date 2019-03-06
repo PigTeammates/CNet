@@ -25,7 +25,7 @@ def send_signal(s, seq_no, typ, recv_ip, recv_port):
 
 def send_data(s, window, seq, recv_ip, recv_port):
     for seq_no in seq:
-        msg = window[seq_no]
+        msg = window[seq_no][1]
         pkt_header = PacketHeader(type=DATA, seq_num=seq_no, length=len(msg))
         pkt_header.checksum = compute_checksum(pkt_header / msg)
         pkt = pkt_header / msg
@@ -62,8 +62,8 @@ def recv_signal(s, receiver_ip, receiver_port):
 def sender(receiver_ip, receiver_port, window_size):
     """ TODO: Open socket and send message from sys.stdin """
     window = dict()     # window to store seq_no-(timer, data chunk)
-    timer = 0           # signal to shutdown the timer
     next_seq = 0        # next sequence number to be ACK
+    seq_data = 0        # latest sequence number of data chunk
     eof = False         # reach the end of stdin
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -87,30 +87,36 @@ def sender(receiver_ip, receiver_port, window_size):
 
         if pkt_header and pkt_header.type == ACK:
             ack_seq = pkt_header.seq_num
-            # try to advance the window
-            for seq_no in [seq for seq in window.keys() if seq < ack_seq]:
-                window.pop(seq_no)
+            # try to clear the buffer
+            if ack_seq in window:
+                window.pop(ack_seq)
 
-            # if advanced, reset the timer
-            if ack_seq > next_seq:
-                next_seq = ack_seq
-                timer = time.time()
+            # retransmit any packet with timeout
+            timeout_msg = list()    # a list storing the seq_no of the timeout msg
+            for seq_no, val in window.items():
+                timer = val[0]
+                if time.time() - timer > ret_time:
+                    timeout_msg.append(seq_no)
+                    val[0] = time.time()    # reset the timer
+
+            if len(timeout_msg) > 0:
+                send_data(s, window, timeout_msg, receiver_ip, receiver_port)
+
+            # try to advance the window
+            next_seq = sorted(window.keys())[0] if len(window) > 0 else seq_data
 
         # refill the window with data, if any
-        while not eof and len(window) < window_size:
+        while not eof and seq_data + 1 < next_seq + window_size:
             msg = sys.stdin.read(PAYLOAD_SIZE)
             if not msg:
                 eof = True
                 break
-            seq_no = next_seq + len(window)
-            window[seq_no] = msg
-            new_msg.append(seq_no)
+            window[seq_data] = [time.time(), msg]
+            new_msg.append(seq_data)
+            seq_data += 1
 
-        # retransmit all the packets after timeout
-        if time.time() - timer > ret_time:
-            send_data(s, window, window.keys(), receiver_ip, receiver_port)
-            timer = time.time()
-        elif len(new_msg) > 0:
+        # transmit new packets, if any
+        if len(new_msg) > 0:
             send_data(s, window, new_msg, receiver_ip, receiver_port)
 
     s.setblocking(True)  # reset blocking mode of the socket
