@@ -91,19 +91,19 @@ def sender(receiver_ip, receiver_port, window_size):
             if ack_seq in window:
                 window.pop(ack_seq)
 
-            # retransmit any packet with timeout
-            timeout_msg = list()    # a list storing the seq_no of the timeout msg
-            for seq_no, val in window.items():
-                timer = val[0]
-                if time.time() - timer > ret_time:
-                    timeout_msg.append(seq_no)
-                    val[0] = time.time()    # reset the timer
+        # retransmit any packet with timeout
+        timeout_msg = list()    # a list storing the seq_no of the timeout msg
+        for seq_no, val in window.items():
+            timer = val[0]
+            if time.time() - timer > ret_time:
+                timeout_msg.append(seq_no)
+                val[0] = time.time()    # reset the timer
 
-            if len(timeout_msg) > 0:
-                send_data(s, window, timeout_msg, receiver_ip, receiver_port)
+        if len(timeout_msg) > 0:
+            send_data(s, window, timeout_msg, receiver_ip, receiver_port)
 
-            # try to advance the window
-            next_seq = sorted(window.keys())[0] if len(window) > 0 else seq_data
+        # try to advance the window
+        next_seq = sorted(window.keys())[0] if len(window) > 0 else seq_data
 
         # refill the window with data, if any
         while not eof and seq_data + 1 < next_seq + window_size:

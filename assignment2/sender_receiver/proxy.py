@@ -4,8 +4,8 @@ import random
 import time
 from collections import deque
 
-
 from util import *
+
 
 def main():
     """Parse command-line argument and call receiver function """
@@ -15,7 +15,7 @@ def main():
     destination_ip = sys.argv[2]
     destination_port = int(sys.argv[3])
 
-    #Listen
+    # Listen
     s1 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s1.bind(('127.0.0.1', listening_port))
     s1.settimeout(0)
@@ -26,54 +26,57 @@ def main():
     pktQueue = deque()
     timeQueue = deque()
 
+    ackpktQueue = deque()
+    acktimeQueue = deque()
+
     delayTime = 100
-    base_time = time.time()*1000
+    base_time = time.time() * 1000
 
     sender_info = ()
 
     while True:
         # receive packet from sender
-        try: 
+        try:
             pkt, address = s1.recvfrom(2048)
             ## extract header and payload
             pkt_header = PacketHeader(pkt[:16])
-            msg = pkt[16:16+pkt_header.length]
+            msg = pkt[16:16 + pkt_header.length]
 
             if pkt_header.type == 0:
                 sender_info = address
-            
-            if cmp(address, sender_info)==0:
 
-                rand = random.randint(0,4)
-                if(rand == 0):
+            if cmp(address, sender_info) == 0:
+
+                rand = random.randint(0, 4)
+                if (rand == 0):
                     # corruption
-                    pkt_header.checksum = random.randint(0,999)
+                    pkt_header.checksum = random.randint(0, 999)
                     pkt = pkt_header / msg
                     s2.sendto(str(pkt), (destination_ip, destination_port))
-                    #print("Packet %s corrupted" %(pkt_header.seq_num))
-                elif(rand == 1):
+                    # print("Packet %s corrupted" %(pkt_header.seq_num))
+                elif (rand == 1):
                     # delay
                     pktQueue.append(pkt)
-                    cur_time = time.time()*1000 - base_time
+                    cur_time = time.time() * 1000 - base_time
                     timeQueue.append(cur_time + delayTime)
-                elif(rand == 2):
+                elif (rand == 2):
                     # drop
-                    #print("Packet %s dropped" %(pkt_header.seq_num))
+                    # print("Packet %s dropped" %(pkt_header.seq_num))
                     pass
                 else:
                     # normal
                     s2.sendto(pkt, (destination_ip, destination_port))
-                    #print("Packet %s send to receiver" %(pkt_header.seq_num))
-                
-                cur_time = time.time()*1000 - base_time
-                while len(timeQueue)!=0 and timeQueue[0]>= cur_time :
+                    print("Packet %s send to receiver" %(pkt_header.seq_num))
+
+                cur_time = time.time() * 1000 - base_time
+                while len(timeQueue) != 0 and timeQueue[0] >= cur_time:
                     pkt = pktQueue[0]
                     pktQueue.popleft()
                     timeQueue.popleft()
                     s2.sendto(pkt, (destination_ip, destination_port))
 
                     pkt_header = PacketHeader(pkt[:16])
-                    #print("Packet %s delay send to receiver" %(pkt_header.seq_num))
+                    # print("Packet %s delay send to receiver" %(pkt_header.seq_num))
 
             else:
                 pass
@@ -91,15 +94,46 @@ def main():
             pkt, address = s2.recvfrom(2048)
             ## extract header and payload
             pkt_header = PacketHeader(pkt[:16])
-            msg = pkt[16:16+pkt_header.length]
+            msg = pkt[16:16 + pkt_header.length]
 
-            s1.sendto(pkt, sender_info)
-            #print("Packet %s send to sender" %(pkt_header.seq_num))
+            rand = random.randint(0, 4)
+            print 'random num:', rand
+
+            if (rand == 0):
+                # corruption
+                pkt_header.checksum = random.randint(0, 999)
+                pkt = pkt_header / msg
+                s1.sendto(str(pkt), sender_info)
+            elif (rand == 1):
+                # delay
+                ackpktQueue.append(pkt)
+                cur_time = time.time() * 1000 - base_time
+                acktimeQueue.append(cur_time + delayTime)
+            elif (rand == 2):
+                # drop
+                # print("Packet %s dropped" %(pkt_header.seq_num))
+                pass
+            else:
+                # normal
+                print pkt_header.type
+                s1.sendto(pkt, sender_info)
+
+            cur_time = time.time() * 1000 - base_time
+            while len(acktimeQueue) != 0 and acktimeQueue[0] >= cur_time:
+                pkt = ackpktQueue[0]
+                ackpktQueue.popleft()
+                acktimeQueue.popleft()
+                s1.sendto(pkt, sender_info)
+
+                # pkt_header = PacketHeader(pkt[:16])
+                # print("Packet %s delay send to receiver" %(pkt_header.seq_num))
+
+
+
+
         except:
             pass
             ##print "listen to sender timeout"
-
-
 
 
 if __name__ == "__main__":
