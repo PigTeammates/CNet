@@ -69,7 +69,7 @@ def main():
                     print("Packet %s send to receiver" %(pkt_header.seq_num))
 
                 cur_time = time.time() * 1000 - base_time
-                while len(timeQueue) != 0 and timeQueue[0] >= cur_time:
+                while len(timeQueue) != 0 and timeQueue[0] <= cur_time:
                     pkt = pktQueue[0]
                     pktQueue.popleft()
                     timeQueue.popleft()
