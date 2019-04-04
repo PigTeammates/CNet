@@ -33,4 +33,5 @@
 
 .vagrant
 .idea
+.vscode
 *.pyc
