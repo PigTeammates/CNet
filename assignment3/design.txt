@@ -1,0 +1,12 @@
+forwarding table: [dstAddr, port]
+    -> mapping from dstAddr to the port for routing (many to one) 
+dijkstra algorithm: works upon addr
+    -> get the next router's addr
+    -> transform neighbor's addr to port
+    -> mapping from neighbor's addr to the corresponding port (one to one)
+link states: dict of dict
+    -> first level mapping: mapping from router's addr to its link states
+    -> second level mapping: mapping from the neighbor's addr of the router to cost
+seq_ns: [rtrAddr, seq_no]
+    -> mapping from rtrAddr to the corresponding sequence number
+incr_num: record its sequence number
