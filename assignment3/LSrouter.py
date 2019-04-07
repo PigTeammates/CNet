@@ -21,10 +21,10 @@ class LSrouter(Router):
         self.heartbeatTime = heartbeatTime
         self.last_time = 0
         # Hints: initialize local state
-        self.forwarding_table = dict()
-        self.ports = dict()
-        self.link_states = defaultdict(list)
-        self.seq_ns = defaultdict(lambda: 0)
+        self.forwarding_table = dict()  # {rtr_addr: port}
+        self.ports = dict()  # {nbr_addr: port}
+        self.link_states = defaultdict(list)  # {rtr_addr: [rtr_addr, nbr_addr, cost]}
+        self.seq_ns = defaultdict(lambda: 0)  # {rtr_addr: seq_no}
         self.incr_num = 0
 
     def update(self):
@@ -53,7 +53,7 @@ class LSrouter(Router):
         packet = Packet(Packet.ROUTING, self.addr, None, content=dumps(message))
         for port in self.ports.values():
             self.send(port, packet)
-            
+
         # update the sequence number
         self.incr_num += 1
 
@@ -80,11 +80,11 @@ class LSrouter(Router):
                 # update the forwarding table
                 self.update()
                 # broadcast the packet to other neighbors
-                for neighbor, nport in self.ports.items():
+                for neighbor, nbr_port in self.ports.items():
                     # never broadcast the packet to its source
-                    if neighbor != addr and nport != port:
-                        self.send(nport, packet)
-            
+                    if neighbor != addr and nbr_port != port:
+                        self.send(nbr_port, packet)
+
             # update with the latest seq_no
             self.seq_ns[addr] = sqn
 
@@ -95,9 +95,10 @@ class LSrouter(Router):
         my_links.append([self.addr, endpoint, cost])
         my_links.sort()
         self.ports[endpoint] = port
-        self.update()
         # print "%s_%s_%d" % (self.addr, endpoint, cost)
 
+        # update the forwarding table
+        self.update()
         # broadcast the new link state of this router to all neighbors
         self.broadcast()
 
@@ -106,7 +107,7 @@ class LSrouter(Router):
         # find out the corresponding addr
         keys, vals = zip(*self.ports.items())
         addr = keys[vals.index(port)]
-        
+
         self.ports.pop(addr)
         self.link_states[self.addr] = [x for x in self.link_states[self.addr] if x[1] != addr]
         self.link_states[addr] = [x for x in self.link_states[addr] if x[1] != self.addr]
