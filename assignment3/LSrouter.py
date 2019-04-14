@@ -85,8 +85,8 @@ class LSrouter(Router):
                     if neighbor != addr and nbr_port != port:
                         self.send(nbr_port, packet)
 
-            # update with the latest seq_no
-            self.seq_ns[addr] = sqn
+                # update with the latest seq_no
+                self.seq_ns[addr] = sqn
 
     def handleNewLink(self, port, endpoint, cost):
         """TODO: handle new link"""
