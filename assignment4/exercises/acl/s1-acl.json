@@ -52,6 +52,28 @@
         "dstAddr": "00:00:00:00:01:04",
         "port": 4
       }
+    },
+    {
+      "table": "MyIngress.udp_acl",
+      "default_action": true,
+      "action_name": "NoAction",
+      "action_params": { }
+    },
+    {
+      "table": "MyIngress.udp_acl",
+      "match": {
+        "hdr.udp.dstPort": [80, 65535]
+      },
+      "action_name": "MyIngress.drop",
+      "action_params": { }
+    },
+    {
+      "table": "MyIngress.udp_acl",
+      "match": {
+        "hdr.ipv4.dstAddr": ["10.0.1.4", 4294967295]
+      },
+      "action_name": "MyIngress.drop",
+      "action_params": { }
     }
   ]
 }

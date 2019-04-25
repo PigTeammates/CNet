@@ -160,14 +160,27 @@ control MyIngress(inout headers hdr,
           IPv4 address 10.0.1.4, by specifing {"hdr.ipv4.dstAddr": ["10.0.1.4",
           4294967295]} as "match".
      */
+    
+    table udp_acl {
+        key = {
+            hdr.ipv4.dstAddr: ternary;
+            hdr.udp.dstPort: ternary;
+        }
+        actions = {
+            drop;
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }
 
     apply {
         if (hdr.ipv4.isValid()) {
             ipv4_lpm.apply();
-            /* TODO: add your table to the control flow */
-
+            if (hdr.udp.isValid()) {
+                udp_acl.apply();
+            }
         }
-
     }
 }
 
